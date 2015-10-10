@@ -1,0 +1,43 @@
+{
+  "name": "tilestrata-balancer",
+  "version": "0.0.0",
+  "description": "Elastic, metatile-aware load lalancer for TileStrata",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "bin": {
+    "tilestrata-balancer": "./bin/tilestrata-balancer.js"
+  },
+  "scripts": {
+    "test": "mocha -R spec",
+    "test-ci": "mocha -R tap"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naturalatlas/tilestrata-balancer.git"
+  },
+  "keywords": [
+    "lb",
+    "elb",
+    "elastic",
+    "loadbalancer",
+    "tilestrata",
+    "metatile",
+    "proxy"
+  ],
+  "bugs": {
+    "url": "https://github.com/naturalatlas/tilestrata-balancer/issues"
+  },
+  "homepage": "https://github.com/naturalatlas/tilestrata-balancer",
+  "dependencies": {
+    "async": "^1.4.2",
+    "hashring": "^3.2.0",
+    "http-proxy": "^1.11.2",
+    "lodash": "^3.10.1",
+    "npmlog": "^1.2.1",
+    "yargs": "^3.27.0"
+  },
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "mocha": "^2.3.3"
+  }
+}
