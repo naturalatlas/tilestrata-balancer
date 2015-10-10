@@ -13,8 +13,7 @@ $ tilestrata-balancer \
 	--port=8080 \ # for connections from the outside world
 	--private-port=8081 \ # for connections from tilestrata tile servers
 	--health-check-interval=5000 \ # how often to ping nodes
-	--unhealthy-count=1 \ # how a many unhealty pings needed to determine a host is unhealthy
-	--healthy-count=1 # how a many healty pings needed to determine a host is healthy
+	--unhealthy-count=1 \ # consecutive unhealty pings needed to determine a host is unhealthy
 ```
 
 ## Configuration

@@ -20,6 +20,10 @@ var argv = require('yargs')
 			"type": "number",
 			"description": "Private port to speak with TileStrata through"
 		}
+		"unhealthy-count": {
+			"type": "number",
+			"description": "Number of failed health checks allowed before instance removed from pool"
+		}
 	}).argv;
 
 var balancer = new Balancer(argv);

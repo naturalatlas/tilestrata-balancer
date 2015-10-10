@@ -34,6 +34,7 @@
     "http-proxy": "^1.11.2",
     "lodash": "^3.10.1",
     "npmlog": "^1.2.1",
+    "request": "^2.64.0",
     "yargs": "^3.27.0"
   },
   "devDependencies": {
