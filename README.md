@@ -13,7 +13,7 @@ $ tilestrata-balancer \
 	--port=8080 \ # for connections from the outside world
 	--private-port=8081 \ # for connections from tilestrata tile servers
 	--health-check-interval=5000 \ # how often to ping nodes
-	--unhealthy-count=1 \ # consecutive unhealty pings needed to determine a host is unhealthy
+	--unhealthy-count=1 # consecutive unhealty pings needed to determine a host is unhealthy
 ```
 
 ## Configuration
@@ -41,6 +41,7 @@ One cool thing to note is that TileStrata Balancer allows layers to be non-homog
 
 1. TileStrata should start up and send periodic POSTs to `/nodes` until it receives a `201 Created`. The request body should contain a unique `id`, `node_weight` and a `layers` array with various parameters about each (`minZoom`, `maxZoom`, `metatile`). The successful response body (JSON) will contain a `"token"` property that is later sent as the `X-TileStrataBalancer-Token` header on health checks.
 2. TileStrata Balancer will send periodic requests to `/health` on the TileStrata node to ensure it's healthy. If unhealthy, the node is dropped from the pool. TileStrata should detect the lack of incoming health checks from the balancer (indicated by `X-TileStrataBalancer-Token`) and attempt to re-register (1).
+	- If TileStrata is shutting down, it should call `DELETE /nodes/:id` on the balancer.
 
 ## License
 
