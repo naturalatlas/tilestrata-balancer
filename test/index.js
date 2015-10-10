@@ -4,14 +4,25 @@ var assert = require('chai').assert;
 var Balancer = require('../lib/Balancer.js');
 var tilestrata = require('tilestrata');
 
-// TODO: test metatile routing
+function waitToEstablish(strata, callback) {
+	async.whilst(
+		function() { return strata.balancer.reconnecting(); },
+		function(callback) {
+			setTimeout(callback, 100);
+		},
+		callback);
+}
 
 describe('TileStrata Balancer', function() {
-	var balancer, strata;
+	var balancer, strata, strata2;
 	afterEach(function(done) {
 		async.series([
 			function(callback) {
 				if (strata) return strata.close(callback);
+				callback();
+			},
+			function(callback) {
+				if (strata2) return strata2.close(callback);
 				callback();
 			},
 			function(callback) {
@@ -63,12 +74,7 @@ describe('TileStrata Balancer', function() {
 				strata.listen(8082, callback);
 			},
 			function waitForEstablish(callback) {
-				async.whilst(
-					function() { return strata.balancer.reconnecting(); },
-					function(callback) {
-						setTimeout(callback, 100);
-					},
-					callback);
+				waitToEstablish(strata, callback);
 			},
 			function issueRequestToSucceed(callback) {
 				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(res) {
@@ -175,12 +181,7 @@ describe('TileStrata Balancer', function() {
 				strata.listen(8082, callback);
 			},
 			function waitForEstablish(callback) {
-				async.whilst(
-					function() { return strata.balancer.reconnecting(); },
-					function(callback) {
-						setTimeout(callback, 100);
-					},
-					callback);
+				waitToEstablish(strata, callback);
 			},
 			function waitForFirstFailedHealthCheck(callback) {
 				var ms = checkInterval*(failAfter)+10;
@@ -211,5 +212,87 @@ describe('TileStrata Balancer', function() {
 			if (err) throw err;
 			done();
 		});
+	});
+
+	it('should acknowledge layer metatile option', function(done) {
+		this.timeout(5000);
+		var metatile = 4;
+		var tile = function(z,x,y) {
+			return [z, x, y].join('/');
+		}
+		var expected_server1 = [tile(1,4,3),tile(1,5,3),tile(1,6,3),tile(1,7,3)];
+		var expected_server2 = [tile(1,0,3),tile(1,1,3),tile(1,2,3),tile(1,3,3)];
+		async.series([
+			function setupBalancer(callback) {
+				balancer = new Balancer({
+					hostname: '127.0.0.1',
+					port: '8081',
+					privatePort: 8880,
+					checkInterval: 100,
+					unhealthyCount: 5
+				});
+
+				balancer.listen(callback);
+			},
+			function setupTileStrata1(callback) {
+				strata = tilestrata({
+					balancer: {
+						host: '127.0.0.1:8880',
+						register_mindelay: 10,
+						register_maxdelay: 10,
+						register_timeout: 100
+					}
+				});
+				strata.layer('mylayer', {metatile: metatile}).route('tile.txt')
+					.use({serve: function(server, tile, callback) {
+						return callback(null, new Buffer('res', 'utf8'), {
+							'X-Server': '1'
+						});
+					}});
+
+				strata.listen(8082, callback);
+			},
+			function setupTileStrata2(callback) {
+				strata2 = tilestrata({
+					balancer: {
+						host: '127.0.0.1:8880',
+						register_mindelay: 10,
+						register_maxdelay: 10,
+						register_timeout: 100
+					}
+				});
+				strata2.layer('mylayer', {metatile: metatile}).route('tile.txt')
+					.use({serve: function(server, tile, callback) {
+						return callback(null, new Buffer('res', 'utf8'), {
+							'X-Server': '2'
+						});
+					}});
+				strata2.listen(8083, callback);
+			},
+			function waitForEstablish1(callback) {
+				waitToEstablish(strata, callback);
+			},
+			function waitForEstablish2(callback) {
+				waitToEstablish(strata2, callback);
+			},
+			function issueRequestsA(callback) {
+				async.each(expected_server1, function(key, callback) {
+					http.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(res) {
+						assert.equal(res.statusCode, 200);
+						assert.equal(res.headers['x-server'], '1', 'X-Server header for ' + key);
+						callback();
+					});
+				}, callback);
+			},
+			function issueRequestsB(callback) {
+				async.each(expected_server2, function(key, callback) {
+					http.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(res) {
+						assert.equal(res.statusCode, 200);
+						assert.equal(res.headers['x-server'], '2', 'X-Server header for ' + key);
+						callback();
+					});
+				}, callback);
+			}
+		], done);
 	});
 });

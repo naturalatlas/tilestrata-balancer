@@ -33,6 +33,13 @@ var strata = tilestrata({
 });
 ```
 
+If you use metatiling, set the `metatile` option on the layer to have it recognized by the balancer. Note: this will likely be redundant with plugin settings.
+
+```js
+strata.layer('mylayer', {metatile, 4})
+	.use(mapnik({metatile: 4, /* ... */}))
+```
+
 ## Additional Notes
 
 One cool thing to note is that TileStrata Balancer allows layers to be non-homogenously spread about your cluster. The balancer keeps track of what layers exist on each host. This property is great if you have multiple maps that are tough to squeeze on a single server.
