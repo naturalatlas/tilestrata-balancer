@@ -14,14 +14,14 @@ $ tilestrata-balancer \
 	--private-port=8081 \ # for connections from tilestrata tile servers
 	--health-check-interval=5000 \ # how often to ping nodes
 	--unhealthy-count=1 \ # how a many unhealty pings needed to determine a host is unhealthy
-	--healthy-count=1 \ # how a many healty pings needed to determine a host is healthy
+	--healthy-count=1 # how a many healty pings needed to determine a host is healthy
 ```
 
 ## Configuration
 
 *First and foremost*, whatever `--private-port` is set to needs to *not* be accessible to the outside world. This is crucial so that outside connections can't maliciously insert a random node into the pool.
 
-On the servers downstream, use the `balancer` option to set where to find the load balancer. When TileStrata starts up, it will check-in with the load balancer, informing it that its ready to be routed to. After that, the balancer will periodically check [`/health`](https://github.com/naturalatlas/tilestrata#health-checks) to ensure the node is healthy.
+On the servers upstream, use the `balancer` option to set where to find the load balancer. When TileStrata starts up, it will check-in with the load balancer, informing it that its ready to be routed to. After that, the balancer will periodically check [`/health`](https://github.com/naturalatlas/tilestrata#health-checks) to ensure the node is healthy.
 
 ```js
 var strata = tilestrata({
@@ -36,12 +36,12 @@ var strata = tilestrata({
 
 ## Additional Notes
 
-One cool thing to note is that `tilestrata-balancer` allows layers to be non-homogenously spread about your cluster. The balancer keeps track of what layers exist on each host. This property is great if you have multiple maps that are tough to squeeze on a single server.
+One cool thing to note is that TileStrata Balancer allows layers to be non-homogenously spread about your cluster. The balancer keeps track of what layers exist on each host. This property is great if you have multiple maps that are tough to squeeze on a single server.
 
 ### The Contract
 
-1. TileStrata should start up and send periodic POSTs to `/nodes` until it receives a `201 Created`. The request body should contain the `node_weight and a `layers` array with various parameters about each (`minzoom`, `maxzoom`, `metatile`). The successful response body (JSON) will contain a `"token"` property that is later sent as the `X-TileStrataBalancer-Token` header on health checks.
-2. TileStrata balancer will send periodic requests to `/health` on the TileStrata node to ensure it's healthy. If unhealthy, the node is dropped from the pool. TileStrata should detect the lack of incoming health checks from the balancer (indicated by `X-TileStrataBalancer-Token`) and attempt to re-register (1).
+1. TileStrata should start up and send periodic POSTs to `/nodes` until it receives a `201 Created`. The request body should contain a unique `id`, `node_weight` and a `layers` array with various parameters about each (`minZoom`, `maxZoom`, `metatile`). The successful response body (JSON) will contain a `"token"` property that is later sent as the `X-TileStrataBalancer-Token` header on health checks.
+2. TileStrata Balancer will send periodic requests to `/health` on the TileStrata node to ensure it's healthy. If unhealthy, the node is dropped from the pool. TileStrata should detect the lack of incoming health checks from the balancer (indicated by `X-TileStrataBalancer-Token`) and attempt to re-register (1).
 
 ## License
 
