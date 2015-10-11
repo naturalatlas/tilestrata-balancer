@@ -214,14 +214,55 @@ describe('TileStrata Balancer', function() {
 		});
 	});
 
+	it('should acknowledge layer bbox option', function(done) {
+		async.series([
+			function setupBalancer(callback) {
+				balancer = new Balancer({
+					hostname: '127.0.0.1',
+					port: '8081',
+					privatePort: 8880,
+					checkInterval: 100,
+					unhealthyCount: 5
+				});
+
+				balancer.listen(callback);
+			},
+			function setupTileStrata(callback) {
+				strata = tilestrata({
+					balancer: {
+						host: '127.0.0.1:8880',
+						register_mindelay: 10,
+						register_maxdelay: 10,
+						register_timeout: 100
+					}
+				});
+				strata.layer('mylayer', {bbox: [[-85,43,-84,44]]}).route('tile.txt')
+					.use({serve: function(server, tile, callback) {
+						return callback(null, new Buffer('res', 'utf8'), {});
+					}});
+
+				strata.listen(8082, callback);
+			},
+			function waitForEstablish(callback) {
+				waitToEstablish(strata, callback);
+			},
+			function issueRequest(callback) {
+				http.get('http://127.0.0.1:8081/mylayer/14/3204/5909/tile.txt', function(res) {
+					assert.equal(res.statusCode, 404);
+					callback();
+				});
+			}
+		], done);
+	});
+
 	it('should acknowledge layer metatile option', function(done) {
 		this.timeout(5000);
 		var metatile = 4;
 		var tile = function(z,x,y) {
 			return [z, x, y].join('/');
-		}
-		var expected_server1 = [tile(1,4,3),tile(1,5,3),tile(1,6,3),tile(1,7,3)];
-		var expected_server2 = [tile(1,0,3),tile(1,1,3),tile(1,2,3),tile(1,3,3)];
+		};
+		var expected_server1 = [tile(3,0,0),tile(3,1,1),tile(3,2,2),tile(3,3,3)];
+		var expected_server2 = [tile(1,4,3),tile(1,5,3),tile(1,6,3),tile(1,7,3)];
 		async.series([
 			function setupBalancer(callback) {
 				balancer = new Balancer({

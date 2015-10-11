@@ -33,7 +33,7 @@ var strata = tilestrata({
 });
 ```
 
-If you use metatiling, set the `metatile` option on the layer to have it recognized by the balancer. Note: this will likely be redundant with plugin settings.
+If using metatiles, set the `metatile` option on the layer to have it recognized by the balancer. Note: this will likely be redundant with plugin settings.
 
 ```js
 strata.layer('mylayer', {metatile, 4})
