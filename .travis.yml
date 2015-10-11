@@ -3,5 +3,8 @@ node_js:
   - "4.0"
   - "0.12"
   - "0.10"
+install:
+  - npm install
+  - npm install tilestrata
 script:
   - make test && (make test-ci-coverage || true)

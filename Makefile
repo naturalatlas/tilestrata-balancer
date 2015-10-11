@@ -26,6 +26,7 @@ ifeq ($(strip $(version)),)
 else
 	rm -rf node_modules
 	npm install
+	npm install tilestrata
 	make test
 	sed -i.bak 's/"version": "[^"]*"/"version": "$(version)"/' package.json
 	rm *.bak
