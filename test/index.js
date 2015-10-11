@@ -336,4 +336,88 @@ describe('TileStrata Balancer', function() {
 			}
 		], done);
 	});
+
+	it('should handle hard-restarts of tilestrata (id change)', function(done) {
+		this.timeout(5000);
+		var stratahttp;
+
+		function initserver(callback) {
+			strata = tilestrata({
+				balancer: {
+					host: '127.0.0.1:8880',
+					register_mindelay: 10,
+					register_maxdelay: 10,
+					register_timeout: 100
+				}
+			});
+			strata.layer('mylayer').route('tile.txt')
+				.use({serve: function(server, tile, callback) {
+					return callback(null, new Buffer('res', 'utf8'), {});
+				}});
+
+			strata.listen(8082, callback);
+		};
+
+		async.series([
+			function setupBalancer(callback) {
+				balancer = new Balancer({
+					hostname: '127.0.0.1',
+					port: '8081',
+					privatePort: 8880,
+					checkInterval: 50,
+					unhealthyCount: 2
+				});
+
+				balancer.listen(callback);
+			},
+			function setupTileStrata(callback) {
+				initserver(callback);
+			},
+			function waitForEstablish(callback) {
+				waitToEstablish(strata, callback);
+			},
+			function restartTileStrata(callback) {
+				strata.close(function(err) {
+					if (err) throw err;
+					stratahttp = strata.listen(8082, callback);
+				});
+			},
+			function wait1(callback) {
+				// wait for any health checks to fail
+				setTimeout(callback, 500);
+			},
+			function issueRequest1(callback) {
+				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+					assert.equal(res.statusCode, 200);
+					callback();
+				});
+			},
+			function hardRestartTileStrata(callback) {
+				// don't exit balancer cleanly (don't notify balancer)
+				assert.isTrue(!!strata.balancer_timeout);
+				clearTimeout(strata.balancer_timeout);
+				stratahttp.close(function(err) {
+					if (err) throw err;
+					initserver(callback);
+				});
+			},
+			function wait2(callback) {
+				// wait for any health checks to fail
+				setTimeout(callback, 500);
+			},
+			function issueRequest2(callback) {
+				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+					assert.equal(res.statusCode, 200);
+					callback();
+				});
+			},
+			function checkState(callback) {
+				assert.equal(Object.keys(balancer.nodes.hosts_by_id).length, 1, 'Entries in hosts_by_id');
+				assert.equal(Object.keys(balancer.nodes.layers_by_id).length, 1, 'Entries in layers_by_id');
+				assert.equal(Object.keys(balancer.nodes.check_timers_by_id).length, 1, 'Entries in check_timers_by_id');
+				assert.equal(Object.keys(balancer.nodes.ids_by_host).length, 1, 'Entries in ids_by_host');
+				callback();
+			}
+		], done);
+	});
 });
