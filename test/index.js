@@ -1,5 +1,5 @@
-var http = require('http');
 var async = require('async');
+var request = require('request');
 var assert = require('chai').assert;
 var Balancer = require('../lib/Balancer.js');
 var tilestrata = require('tilestrata');
@@ -77,18 +77,12 @@ describe('TileStrata Balancer', function() {
 				waitToEstablish(strata, callback);
 			},
 			function issueRequestToSucceed(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(err, res, body) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 200);
 					assert.equal(res.headers['x-test'], 'a');
-					var body = '';
-					res.setEncoding('utf8');
-					res.on('data', function(chunk) { body += chunk; });
-					res.on('end', function() {
-						assert.deepEqual(JSON.parse(body), {"x":2,"y":1,"z":3,"layer":"mylayer","filename":"tile.txt","method":"GET","qs":"someqs"});
-						callback();
-					});
-				}).on('error', function(err) {
-					throw new Error('Request failed (' + err.message + ')');
+					assert.deepEqual(JSON.parse(body), {"x":2,"y":1,"z":3,"layer":"mylayer","filename":"tile.txt","method":"GET","qs":"someqs"});
+					callback();
 				});
 			},
 			function closeTileStrata(callback) {
@@ -103,16 +97,12 @@ describe('TileStrata Balancer', function() {
 				strata.listen(8082, callback);
 			},
 			function issueRequestToFail(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(err, res, body) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 404);
-					res.setEncoding('utf8');
-					var body = '';
-					res.on('data', function(chunk) { body += chunk; });
-					res.on('end', function() {
-						assert.equal(body, 'No servers found to handle the request');
-						callback();
-					});
-				}).on('error', callback);
+					assert.equal(body, 'No servers found to handle the request');
+					callback();
+				});
 			}
 		], function(err) {
 			if (err) throw err;
@@ -192,7 +182,8 @@ describe('TileStrata Balancer', function() {
 			},
 			function issueRequestToSucceed(callback) {
 				// instance should still be "healthy"
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(err, res) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 200);
 					callback();
 				}).on('error', function(err) {
@@ -203,7 +194,8 @@ describe('TileStrata Balancer', function() {
 				setTimeout(callback, checkInterval*unhealthyCount+10);
 			},
 			function issueRequestToFail(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(err, res) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 404);
 					callback();
 				}).on('error', callback);
@@ -247,7 +239,8 @@ describe('TileStrata Balancer', function() {
 				waitToEstablish(strata, callback);
 			},
 			function issueRequest(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/14/3204/5909/tile.txt', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/14/3204/5909/tile.txt', function(err, res) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 404);
 					callback();
 				});
@@ -318,7 +311,8 @@ describe('TileStrata Balancer', function() {
 			},
 			function issueRequestsA(callback) {
 				async.each(expected_server1, function(key, callback) {
-					http.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(res) {
+					request.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(err, res) {
+						if (err) throw err;
 						assert.equal(res.statusCode, 200);
 						assert.equal(res.headers['x-server'], '1', 'X-Server header for ' + key);
 						callback();
@@ -327,7 +321,8 @@ describe('TileStrata Balancer', function() {
 			},
 			function issueRequestsB(callback) {
 				async.each(expected_server2, function(key, callback) {
-					http.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(res) {
+					request.get('http://127.0.0.1:8081/mylayer/'+key+'/tile.txt', function(err, res) {
+						if (err) throw err;
 						assert.equal(res.statusCode, 200);
 						assert.equal(res.headers['x-server'], '2', 'X-Server header for ' + key);
 						callback();
@@ -387,7 +382,8 @@ describe('TileStrata Balancer', function() {
 				setTimeout(callback, 500);
 			},
 			function issueRequest1(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(err, res) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 200);
 					callback();
 				});
@@ -406,7 +402,8 @@ describe('TileStrata Balancer', function() {
 				setTimeout(callback, 500);
 			},
 			function issueRequest2(callback) {
-				http.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(res) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt', function(err, res) {
+					if (err) throw err;
 					assert.equal(res.statusCode, 200);
 					callback();
 				});
