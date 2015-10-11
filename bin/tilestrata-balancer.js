@@ -22,11 +22,18 @@ var argv = require('yargs')
 		},
 		"check-interval": {
 			"type": "number",
+			"default": 5000,
 			"description": "How often to ping children for health info (ms)"
 		},
 		"unhealthy-count": {
 			"type": "number",
+			"default": 1,
 			"description": "Number of failed health checks allowed before instance removed from pool"
+		},
+		"hashring-cache-size": {
+			"type": "number",
+			"description": "Size of LRU for hash ring lookups (per layer)",
+			"default": 5000
 		}
 	}).argv;
 
