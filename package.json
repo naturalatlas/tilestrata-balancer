@@ -1,6 +1,6 @@
 {
   "name": "tilestrata-balancer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Elastic, metatile-aware load lalancer for TileStrata",
   "license": "Apache-2.0",
   "main": "index.js",
