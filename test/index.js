@@ -65,9 +65,10 @@ describe('TileStrata Balancer', function() {
 								layer: tile.layer,
 								filename: tile.filename,
 								method: tile.method,
-								qs: tile.qs
+								qs: tile.qs,
+								headers: tile.headers
 							}), 'utf8');
-				            callback(null, message, {'Content-Type': 'text/plain', 'X-Test': 'a'});
+							callback(null, message, {'Content-Type': 'text/plain', 'X-Test': 'a'});
 						}
 					});
 
@@ -77,11 +78,16 @@ describe('TileStrata Balancer', function() {
 				waitToEstablish(strata, callback);
 			},
 			function issueRequestToSucceed(callback) {
-				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', function(err, res, body) {
+				request.get('http://127.0.0.1:8081/mylayer/3/2/1/tile.txt?someqs', {headers: {'X-Test-InputHeader': 'abc,def*'}}, function(err, res, body) {
 					if (err) throw err;
 					assert.equal(res.statusCode, 200);
 					assert.equal(res.headers['x-test'], 'a');
-					assert.deepEqual(JSON.parse(body), {"x":2,"y":1,"z":3,"layer":"mylayer","filename":"tile.txt","method":"GET","qs":"someqs"});
+
+					var resBody = JSON.parse(body);
+					assert.equal(resBody.headers['x-test-inputheader'], 'abc,def*', 'X-Test-InputHeader should be passed through proxy');
+					delete resBody.headers;
+
+					assert.deepEqual(resBody, {"x":2,"y":1,"z":3,"layer":"mylayer","filename":"tile.txt","method":"GET","qs":"someqs"});
 					callback();
 				});
 			},
