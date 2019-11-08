@@ -71,6 +71,22 @@ describe('TileStrata Balancer', function() {
 							callback(null, message, {'Content-Type': 'text/plain', 'X-Test': 'a'});
 						}
 					});
+				strata.layer('mylayer-nofilename').route('*@2x.txt')
+					.use({
+						serve: function (server, tile, callback) {
+							var message = new Buffer(JSON.stringify({
+								x: tile.x,
+								y: tile.y,
+								z: tile.z,
+								layer: tile.layer,
+								filename: tile.filename,
+								method: tile.method,
+								qs: tile.qs,
+								headers: tile.headers
+							}), 'utf8');
+							callback(null, message, { 'Content-Type': 'text/plain', 'X-Test': 'a' });
+						}
+					});
 
 				strata.listen(8082, callback);
 			},
@@ -88,6 +104,20 @@ describe('TileStrata Balancer', function() {
 					delete resBody.headers;
 
 					assert.deepEqual(resBody, {"x":2,"y":1,"z":3,"layer":"mylayer","filename":"tile.txt","method":"GET","qs":"someqs"});
+					callback();
+				});
+			},
+			function issueRequestToSucceedWithNoFilename(callback) {
+				request.get('http://127.0.0.1:8081/mylayer-nofilename/3/2/1@2x.txt?someqs', { headers: { 'X-Test-InputHeader': 'abc,def*' } }, function (err, res, body) {
+					if (err) throw err;
+					assert.equal(res.statusCode, 200);
+					assert.equal(res.headers['x-test'], 'a');
+
+					var resBody = JSON.parse(body);
+					assert.equal(resBody.headers['x-test-inputheader'], 'abc,def*', 'X-Test-InputHeader should be passed through proxy');
+					delete resBody.headers;
+					// note change of filename for compatibility reasons to start with "t"
+					assert.deepEqual(resBody, { "x": 2, "y": 1, "z": 3, "layer": "mylayer-nofilename", "filename": "t@2x.txt", "method": "GET", "qs": "someqs" });
 					callback();
 				});
 			},
